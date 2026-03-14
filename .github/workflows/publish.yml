@@ -63,11 +63,11 @@ jobs:
           gh release create "${{ steps.formula.outputs.tag }}" \
             --title "dune3d ${{ steps.formula.outputs.version }}" \
             --notes "Homebrew bottle for dune3d ${{ steps.formula.outputs.version }}" \
-            *.bottle.tar.gz
+            *.bottle*.tar.gz
 
       - name: Merge bottle block into formula
         if: steps.check_release.outputs.skip == 'false'
-        run: brew bottle --merge --write --no-commit *.bottle.json
+        run: brew bottle --merge --write --no-commit *.bottle*.json
 
       - name: Commit bottle block
         if: steps.check_release.outputs.skip == 'false'
