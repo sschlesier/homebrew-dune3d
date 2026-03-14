@@ -80,5 +80,5 @@ jobs:
           git add Formula/dune3d.rb
           if ! git diff --staged --quiet; then
             git commit -m "feat: add bottle block for dune3d ${{ steps.formula.outputs.version }}"
-            git push
+            git push origin main
           fi
