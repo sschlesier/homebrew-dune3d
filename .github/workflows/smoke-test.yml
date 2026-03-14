@@ -1,0 +1,32 @@
+name: Weekly Smoke Test
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Monday 8am UTC
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Tap local repo
+        run: |
+          mkdir -p "$(brew --repository)/Library/Taps/sschlesier"
+          ln -sf "$GITHUB_WORKSPACE" "$(brew --repository)/Library/Taps/sschlesier/homebrew-dune3d"
+
+      - name: Install from source
+        run: brew install --build-from-source sschlesier/dune3d/dune3d
+
+      - name: Verify binary
+        run: otool -L "$(brew --prefix)/bin/dune3d"
+
+      - name: Test
+        run: brew test sschlesier/dune3d/dune3d
+
+      - name: Audit
+        run: brew audit --formula sschlesier/dune3d/dune3d

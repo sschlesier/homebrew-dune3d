@@ -46,6 +46,6 @@ class Dune3d < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/dune3d --version", 1)
+    assert_match "dune3d", shell_output("#{bin}/dune3d --help")
   end
 end

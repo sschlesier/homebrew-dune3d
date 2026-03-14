@@ -1,0 +1,81 @@
+name: Publish Bottle
+
+on:
+  push:
+    branches: [main]
+    paths: ['Formula/**']
+  workflow_dispatch:
+
+jobs:
+  bottle:
+    runs-on: macos-15
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Get formula version
+        id: formula
+        run: |
+          VERSION=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' Formula/dune3d.rb | head -1 | tr -d v)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=dune3d-$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if release already exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.formula.outputs.tag }}" 2>/dev/null; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Tap local repo
+        if: steps.check_release.outputs.skip == 'false'
+        run: |
+          mkdir -p "$(brew --repository)/Library/Taps/sschlesier"
+          ln -sf "$GITHUB_WORKSPACE" "$(brew --repository)/Library/Taps/sschlesier/homebrew-dune3d"
+
+      - name: Install for bottling
+        if: steps.check_release.outputs.skip == 'false'
+        run: brew install --build-bottle sschlesier/dune3d/dune3d
+
+      - name: Build bottle
+        if: steps.check_release.outputs.skip == 'false'
+        run: |
+          brew bottle \
+            --json \
+            --root-url "https://github.com/${{ github.repository }}/releases/download/${{ steps.formula.outputs.tag }}" \
+            sschlesier/dune3d/dune3d
+
+      - name: Create GitHub Release and upload bottle
+        if: steps.check_release.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.formula.outputs.tag }}" \
+            --title "dune3d ${{ steps.formula.outputs.version }}" \
+            --notes "Homebrew bottle for dune3d ${{ steps.formula.outputs.version }}" \
+            *.bottle.tar.gz
+
+      - name: Merge bottle block into formula
+        if: steps.check_release.outputs.skip == 'false'
+        run: brew bottle --merge --write --no-commit *.bottle.json
+
+      - name: Commit bottle block
+        if: steps.check_release.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/dune3d.rb
+          if ! git diff --staged --quiet; then
+            git commit -m "feat: add bottle block for dune3d ${{ steps.formula.outputs.version }}"
+            git push
+          fi
