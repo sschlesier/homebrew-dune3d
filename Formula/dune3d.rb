@@ -23,6 +23,12 @@ class Dune3d < Formula
   depends_on :macos
   depends_on "opencascade"
 
+  bottle do
+    root_url "https://github.com/sschlesier/homebrew-dune3d/releases/download/dune3d-1.4.0"
+    rebuild 1
+    sha256 cellar: :any, arm64_sequoia: "42d38a968052e48e1b206bd7f9cba902b1e13c8089ba14badeb044f53dd3487c"
+  end
+
   livecheck do
     url :stable
     strategy :github_latest
