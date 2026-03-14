@@ -56,6 +56,12 @@ jobs:
             --root-url "https://github.com/${{ github.repository }}/releases/download/${{ steps.formula.outputs.tag }}" \
             sschlesier/dune3d/dune3d
 
+      - name: Rename bottle to HTTP filename (single dash)
+        if: steps.check_release.outputs.skip == 'false'
+        run: |
+          for f in *--*.tar.gz; do mv "$f" "${f//--/-}"; done
+          for f in *--*.json;   do mv "$f" "${f//--/-}"; done
+
       - name: Create GitHub Release and upload bottle
         if: steps.check_release.outputs.skip == 'false'
         env:
